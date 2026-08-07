@@ -1,0 +1,16 @@
+[project]
+name = "ppe-detection-verificacion"
+version = "0.1.0"
+description = "Sistema de verificación automática de EPP (casco y chaleco) en entornos industriales mediante visión por computador, usando el modelo preentrenado YOLOv11 melihuzunoglu/ppe-detection."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
