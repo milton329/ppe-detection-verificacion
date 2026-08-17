@@ -5,6 +5,17 @@ const CLASS_COLORS = {
   human: "#9aa1ac",
 };
 
+const CLASS_LABELS = {
+  helmet: "Casco",
+  vest: "Chaleco",
+  "no-helmet": "Sin casco",
+  human: "Persona",
+};
+
+function classLabel(className) {
+  return CLASS_LABELS[className] || className;
+}
+
 const fileInput = document.getElementById("file-input");
 const dropzone = document.getElementById("dropzone");
 const dropzoneEmpty = document.getElementById("dropzone-empty");
@@ -92,7 +103,7 @@ function drawDetections(detections) {
     ctx.lineWidth = 2;
     ctx.strokeRect(bx, by, bw, bh);
 
-    const label = `${det.class_name} ${(det.confidence * 100).toFixed(0)}%`;
+    const label = `${classLabel(det.class_name)} ${(det.confidence * 100).toFixed(0)}%`;
     ctx.font = "600 12px Segoe UI, sans-serif";
     const textWidth = ctx.measureText(label).width;
     ctx.fillStyle = color;
@@ -153,7 +164,7 @@ function showResults(detections) {
     Object.entries(counts).forEach(([className, count]) => {
       const chip = document.createElement("span");
       chip.className = "summary__chip";
-      chip.textContent = `${className}: ${count}`;
+      chip.textContent = `${classLabel(className)}: ${count}`;
       summaryEl.appendChild(chip);
     });
   }
@@ -172,7 +183,7 @@ function showResults(detections) {
 
       const name = document.createElement("span");
       name.className = "detection-item__name";
-      name.textContent = det.class_name;
+      name.textContent = classLabel(det.class_name);
 
       const confidence = document.createElement("span");
       confidence.className = "detection-item__confidence";
