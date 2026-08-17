@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PPE Detection — Verificación de EPP</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__logo">🦺</span>
+      <div>
+        <h1>Verificación de EPP</h1>
+        <p>Detección de casco y chaleco con visión por computador</p>
+      </div>
+    </div>
+    <span class="badge" id="model-badge">melihuzunoglu/ppe-detection · YOLOv11</span>
+  </header>
+
+  <main class="layout">
+    <section class="panel panel--upload">
+      <h2>Imagen</h2>
+
+      <label id="dropzone" class="dropzone" for="file-input">
+        <input type="file" id="file-input" accept="image/*" hidden />
+        <div class="dropzone__content" id="dropzone-empty">
+          <span class="dropzone__icon">📤</span>
+          <p><strong>Arrastra una imagen</strong> o haz clic para elegirla</p>
+          <p class="dropzone__hint">JPG o PNG · una persona, de cerca, buena luz</p>
+        </div>
+        <div class="canvas-wrap" id="canvas-wrap" hidden>
+          <canvas id="preview-canvas"></canvas>
+        </div>
+      </label>
+
+      <div class="controls">
+        <label class="slider-field">
+          <span>Umbral de confianza <strong id="confidence-value">0.25</strong></span>
+          <input type="range" id="confidence-input" min="0.05" max="0.9" step="0.05" value="0.25" />
+        </label>
+        <button id="detect-button" class="button" disabled>Analizar imagen</button>
+      </div>
+
+      <p class="error" id="error-message" hidden></p>
+    </section>
+
+    <section class="panel panel--results">
+      <h2>Resultados</h2>
+
+      <div id="results-empty" class="empty-state">
+        <p>Sube una imagen y presiona <strong>Analizar imagen</strong> para ver las detecciones aquí.</p>
+      </div>
+
+      <div id="results-loading" class="loading-state" hidden>
+        <span class="spinner"></span>
+        <p>Ejecutando el modelo…</p>
+      </div>
+
+      <div id="results-content" hidden>
+        <div class="summary" id="summary"></div>
+        <ul class="detection-list" id="detection-list"></ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Proyecto de Visión por Computador · Especialización en Inteligencia Artificial, UAO</p>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
