@@ -6,9 +6,18 @@ Sistema de verificación automática de EPP (casco y chaleco) en entornos indust
 
 Arquitectura hexagonal (puertos y adaptadores):
 
-- `domain/` — entidades y reglas de negocio (sin dependencias externas).
-- `application/` — casos de uso y puertos (`inbound`/`outbound`).
-- `infrastructure/` — adaptadores concretos: API (FastAPI), modelo (YOLO), almacenamiento.
+- `domain/` — entidades y reglas de negocio (sin dependencias externas). Por
+  ahora solo la entidad `Detection`; el `ComplianceRuleService` (¿la persona
+  cumple con casco/chaleco?) está pendiente de implementar.
+- `application/` — casos de uso (`DetectPPEUseCase`) y puertos
+  (`inbound`/`outbound`).
+- `infrastructure/adapters/inbound/` — adaptadores de entrada:
+  - `api/` — endpoints REST (FastAPI), ej. `POST /detect`.
+  - `web/` — interfaz web (Jinja2 + CSS/JS propios, sin Gradio/Streamlit),
+    servida por el mismo FastAPI en `/app`.
+- `infrastructure/adapters/outbound/model/` — adaptadores de salida:
+  `HuggingFaceModelProvider` (descarga los pesos) y `YoloDetector` (ejecuta
+  la inferencia).
 
 ## Cómo levantar el proyecto
 
@@ -29,9 +38,24 @@ Atajo con `make` (equivale al `uv run uvicorn ...` de arriba):
 make r
 ```
 
-Luego abre http://127.0.0.1:8000 (hola mundo) y http://127.0.0.1:8000/health.
+Luego abre **http://127.0.0.1:8000/app** — interfaz web para subir una imagen
+(o tomar una foto con la cámara del PC/celular) y ver las detecciones
+dibujadas sobre ella. Incluye menú con:
 
-Documentación interactiva: http://127.0.0.1:8000/docs
+- **Verificación** (`/app`) — la pantalla principal.
+- **Ayuda** (`/help`) — qué detecta el modelo, cómo funciona el umbral de
+  confianza, consejos para buenas fotos y limitaciones conocidas.
+- **Documentación API** (`/docs`) — Swagger autogenerado por FastAPI.
+
+`/` redirige automáticamente a `/app`. `/health` sigue disponible para checks
+de salud del servicio.
+
+### Endpoints REST
+
+- `POST /detect?confidence=0.25` — recibe una imagen (`multipart/form-data`,
+  campo `file`) y devuelve las detecciones crudas del modelo (clase,
+  confianza, caja delimitadora), sin aplicar todavía reglas de cumplimiento.
+- `GET /health` — healthcheck.
 
 ## Descarga del modelo
 
@@ -60,3 +84,17 @@ uvicorn ppe_detection.main:app --reload --app-dir src
 ```
 
 </details>
+
+## Captura por cámara
+
+La interfaz web permite tomar la foto directo desde la cámara (PC o celular)
+usando `getUserMedia`, sin subir ningún archivo previo. Funciona sin HTTPS
+mientras se accede por `localhost`/`127.0.0.1`, porque los navegadores tratan
+esas direcciones como contexto seguro. **En producción (Docker, servidor
+remoto) la cámara solo funcionará si el sitio se sirve por HTTPS.**
+
+## Documentación adicional
+
+- [`docs/pruebas_inferencia_umbrales.md`](docs/pruebas_inferencia_umbrales.md) —
+  pruebas iniciales de inferencia, ajuste de umbral de confianza, y hallazgo
+  sobre las limitaciones del modelo con fotos de estudio/banco de imágenes.
