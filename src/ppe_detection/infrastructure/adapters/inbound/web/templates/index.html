@@ -1,26 +1,11 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PPE Detection — Verificación de EPP</title>
-  <link rel="stylesheet" href="/static/css/styles.css" />
-</head>
-<body>
-  <header class="topbar">
-    <div class="topbar__brand">
-      <span class="topbar__logo">🦺</span>
-      <div>
-        <h1>Verificación de EPP</h1>
-        <p>Detección de casco y chaleco con visión por computador</p>
-      </div>
-    </div>
-    <span class="badge" id="model-badge">melihuzunoglu/ppe-detection · YOLOv11</span>
-  </header>
+{% extends "base.html" %}
 
-  <main class="layout">
+{% block content %}
     <section class="panel panel--upload">
-      <h2>Imagen</h2>
+      <div class="panel__header">
+        <h2>Imagen</h2>
+        <span class="badge">melihuzunoglu/ppe-detection · YOLOv11</span>
+      </div>
 
       <label id="dropzone" class="dropzone" for="file-input">
         <input type="file" id="file-input" accept="image/*" hidden />
@@ -34,6 +19,16 @@
           <p class="canvas-hint">Haz clic o arrastra otra imagen para reemplazarla</p>
         </div>
       </label>
+
+      <button type="button" id="camera-toggle-btn" class="link-button">📷 Usar cámara en su lugar</button>
+
+      <div class="camera-wrap" id="camera-wrap" hidden>
+        <video id="camera-video" autoplay playsinline muted></video>
+        <div class="camera-actions">
+          <button type="button" id="camera-capture-btn" class="button">Capturar foto</button>
+          <button type="button" id="camera-cancel-btn" class="button button--ghost">Cancelar</button>
+        </div>
+      </div>
 
       <div class="controls">
         <label class="slider-field">
@@ -63,12 +58,8 @@
         <ul class="detection-list" id="detection-list"></ul>
       </div>
     </section>
-  </main>
+{% endblock %}
 
-  <footer class="footer">
-    <p>Proyecto de Visión por Computador · Especialización en Inteligencia Artificial, UAO</p>
-  </footer>
-
+{% block extra_scripts %}
   <script src="/static/js/app.js"></script>
-</body>
-</html>
+{% endblock %}

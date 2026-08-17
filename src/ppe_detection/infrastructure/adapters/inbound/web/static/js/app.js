@@ -34,8 +34,15 @@ const resultsContent = document.getElementById("results-content");
 const summaryEl = document.getElementById("summary");
 const detectionListEl = document.getElementById("detection-list");
 
+const cameraToggleBtn = document.getElementById("camera-toggle-btn");
+const cameraWrap = document.getElementById("camera-wrap");
+const cameraVideo = document.getElementById("camera-video");
+const cameraCaptureBtn = document.getElementById("camera-capture-btn");
+const cameraCancelBtn = document.getElementById("camera-cancel-btn");
+
 let currentImage = null;
 let currentFile = null;
+let cameraStream = null;
 
 confidenceInput.addEventListener("input", () => {
   confidenceValue.textContent = Number(confidenceInput.value).toFixed(2);
@@ -84,6 +91,56 @@ function drawImageOnly() {
   canvas.width = currentImage.naturalWidth * scale;
   canvas.height = currentImage.naturalHeight * scale;
   ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+}
+
+cameraToggleBtn.addEventListener("click", startCamera);
+cameraCancelBtn.addEventListener("click", stopCamera);
+cameraCaptureBtn.addEventListener("click", capturePhoto);
+
+async function startCamera() {
+  hideError();
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false,
+    });
+  } catch (err) {
+    showError(
+      "No se pudo acceder a la cámara. Revisa los permisos del navegador."
+    );
+    return;
+  }
+  cameraVideo.srcObject = cameraStream;
+  dropzone.hidden = true;
+  cameraToggleBtn.hidden = true;
+  cameraWrap.hidden = false;
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+    cameraStream = null;
+  }
+  cameraWrap.hidden = true;
+  dropzone.hidden = false;
+  cameraToggleBtn.hidden = false;
+}
+
+function capturePhoto() {
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = cameraVideo.videoWidth;
+  tempCanvas.height = cameraVideo.videoHeight;
+  tempCanvas.getContext("2d").drawImage(cameraVideo, 0, 0);
+
+  tempCanvas.toBlob(
+    (blob) => {
+      const file = new File([blob], "camara.jpg", { type: "image/jpeg" });
+      stopCamera();
+      loadImage(file);
+    },
+    "image/jpeg",
+    0.92
+  );
 }
 
 function drawDetections(detections) {

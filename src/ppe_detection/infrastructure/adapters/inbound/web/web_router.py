@@ -17,4 +17,9 @@ def root_redirect() -> RedirectResponse:
 
 @router.get("/app", response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "index.html")
+    return templates.TemplateResponse(request, "index.html", {"active": "app"})
+
+
+@router.get("/help", response_class=HTMLResponse)
+def help_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request, "help.html", {"active": "help"})
