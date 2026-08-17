@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <section class="panel panel--upload">
+      <div class="panel__header">
+        <h2>Imagen</h2>
+        <span class="badge">melihuzunoglu/ppe-detection · YOLOv11</span>
+      </div>
+
+      <label id="dropzone" class="dropzone" for="file-input">
+        <input type="file" id="file-input" accept="image/*" hidden />
+        <div class="dropzone__content" id="dropzone-empty">
+          <span class="dropzone__icon">📤</span>
+          <p><strong>Arrastra una imagen</strong> o haz clic para elegirla</p>
+          <p class="dropzone__hint">JPG o PNG · una persona, de cerca, buena luz</p>
+        </div>
+        <div class="canvas-wrap" id="canvas-wrap" hidden>
+          <canvas id="preview-canvas"></canvas>
+          <p class="canvas-hint">Haz clic o arrastra otra imagen para reemplazarla</p>
+        </div>
+      </label>
+
+      <button type="button" id="camera-toggle-btn" class="link-button">📷 Usar cámara en su lugar</button>
+
+      <div class="camera-wrap" id="camera-wrap" hidden>
+        <video id="camera-video" autoplay playsinline muted></video>
+        <div class="camera-actions">
+          <button type="button" id="camera-capture-btn" class="button">Capturar foto</button>
+          <button type="button" id="camera-cancel-btn" class="button button--ghost">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <label class="slider-field">
+          <span>Umbral de confianza <strong id="confidence-value">0.25</strong></span>
+          <input type="range" id="confidence-input" min="0.05" max="0.9" step="0.05" value="0.25" />
+        </label>
+        <button id="detect-button" class="button" disabled>Analizar imagen</button>
+      </div>
+
+      <p class="error" id="error-message" hidden></p>
+    </section>
+
+    <section class="panel panel--results">
+      <h2>Resultados</h2>
+
+      <div id="results-empty" class="empty-state">
+        <p>Sube una imagen y presiona <strong>Analizar imagen</strong> para ver las detecciones aquí.</p>
+      </div>
+
+      <div id="results-loading" class="loading-state" hidden>
+        <span class="spinner"></span>
+        <p>Ejecutando el modelo…</p>
+      </div>
+
+      <div id="results-content" hidden>
+        <div class="summary" id="summary"></div>
+        <ul class="detection-list" id="detection-list"></ul>
+      </div>
+    </section>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="/static/js/app.js"></script>
+{% endblock %}

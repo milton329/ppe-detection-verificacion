@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}PPE Detection — Verificación de EPP{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__logo">🦺</span>
+      <div>
+        <h1>Verificación de EPP</h1>
+        <p>Detección de casco y chaleco con visión por computador</p>
+      </div>
+    </div>
+    <nav class="topnav">
+      <a href="/app" class="topnav__link{% if active == 'app' %} topnav__link--active{% endif %}">
+        <span class="topnav__icon">🛡️</span> Verificación
+      </a>
+      <a href="/help" class="topnav__link{% if active == 'help' %} topnav__link--active{% endif %}">
+        <span class="topnav__icon">❓</span> Ayuda
+      </a>
+      <a href="/docs" class="topnav__link" target="_blank" rel="noopener">
+        <span class="topnav__icon">📘</span> Documentación API
+      </a>
+    </nav>
+  </header>
+
+  <main class="layout{% block layout_modifier %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <p>Proyecto de Visión por Computador · Especialización en Inteligencia Artificial, UAO</p>
+  </footer>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

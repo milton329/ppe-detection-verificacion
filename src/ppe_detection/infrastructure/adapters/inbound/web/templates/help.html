@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Ayuda — Verificación de EPP{% endblock %}
+
+{% block layout_modifier %} layout--single{% endblock %}
+
+{% block content %}
+    <section class="panel">
+      <h2>¿Qué hace este sistema?</h2>
+      <p class="help-text">
+        Sube una foto de una persona en un entorno industrial y el modelo
+        <code>melihuzunoglu/ppe-detection</code> (YOLOv11) detecta si porta
+        casco y chaleco de seguridad, dibujando una caja sobre cada elemento
+        que reconoce.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Clases detectadas</h2>
+      <ul class="legend-list">
+        <li><span class="legend-dot" style="background:#22c55e"></span><strong>Casco</strong> — casco de seguridad puesto.</li>
+        <li><span class="legend-dot" style="background:#ef4444"></span><strong>Sin casco</strong> — cabeza detectada sin casco.</li>
+        <li><span class="legend-dot" style="background:#3b82f6"></span><strong>Chaleco</strong> — chaleco reflectante de seguridad.</li>
+        <li><span class="legend-dot" style="background:#9aa1ac"></span><strong>Persona</strong> — usada como referencia para ubicar el resto.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>¿Qué es el umbral de confianza?</h2>
+      <p class="help-text">
+        El modelo asigna a cada detección un porcentaje de certeza. El umbral
+        filtra las detecciones más dudosas: un umbral bajo (ej. 0.10) muestra
+        más cajas pero con más riesgo de falsos positivos; un umbral alto
+        (ej. 0.50) muestra solo las detecciones muy seguras, pero puede
+        ocultar elementos reales que el modelo detectó con poca confianza.
+        Un buen punto de partida es <strong>0.25</strong>.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Consejos para una buena foto</h2>
+      <ul class="tips-list">
+        <li>Una sola persona por imagen, de cerca (no en grupo ni muy lejos).</li>
+        <li>Fondo real de obra o industria, no fotos de estudio recortadas sobre fondo de color sólido.</li>
+        <li>Buena iluminación y casco/chaleco bien visibles, sin obstrucciones.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Limitación conocida</h2>
+      <p class="help-text">
+        En pruebas internas, el modelo detecta bien la clase <strong>Casco</strong>
+        y <strong>Persona</strong>, pero le cuesta reconocer <strong>Chaleco</strong>
+        en fotos de banco de imágenes tipo estudio (persona recortada sobre
+        fondo de color liso): la confianza cae a menos del 1%, incluso cuando
+        el chaleco es claramente visible para una persona. Esto ocurre porque
+        el modelo fue entrenado con fotos reales de obra/construcción, muy
+        distintas visualmente a ese tipo de foto. Para resultados confiables,
+        usa fotos de escenarios industriales reales.
+      </p>
+    </section>
+{% endblock %}
