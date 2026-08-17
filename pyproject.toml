@@ -5,6 +5,8 @@ description = "Sistema de verificación automática de EPP (casco y chaleco) en 
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
+    "huggingface-hub>=1.27.0",
+    "ultralytics>=8.4.116",
     "uvicorn[standard]>=0.30",
 ]
 
