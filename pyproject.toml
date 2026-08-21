@@ -5,6 +5,11 @@ description = "Sistema de verificación automática de EPP (casco y chaleco) en 
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
+    "huggingface-hub>=1.27.0",
+    "jinja2>=3.1",
+    "pillow>=11.0",
+    "python-multipart>=0.0.20",
+    "ultralytics>=8.4.116",
     "uvicorn[standard]>=0.30",
 ]
 
@@ -14,3 +19,21 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19",
+    "ruff>=0.16",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+strict = true

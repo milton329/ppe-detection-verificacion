@@ -5,3 +5,7 @@ venv/
 *.egg-info/
 .pytest_cache/
 .env
+iniciar_app.cmd
+tests/fixtures/inference_output/
+.agents/
+skills-lock.json
