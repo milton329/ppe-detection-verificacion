@@ -15,7 +15,9 @@ from ppe_detection.infrastructure.adapters.inbound.web.web_router import (
 
 app = FastAPI(title="PPE Detection Verificacion")
 
-_static_dir = Path(__file__).resolve().parent / "infrastructure" / "adapters" / "inbound" / "web" / "static"
+_static_dir = (
+    Path(__file__).resolve().parent / "infrastructure" / "adapters" / "inbound" / "web" / "static"
+)
 app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 app.include_router(health_router)
