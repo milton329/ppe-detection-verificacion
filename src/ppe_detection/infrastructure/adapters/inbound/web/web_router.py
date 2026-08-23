@@ -9,6 +9,8 @@ router = APIRouter(tags=["web"])
 _templates_dir = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=str(_templates_dir))
 
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+
 
 @router.get("/", include_in_schema=False)
 def root_redirect() -> RedirectResponse:

@@ -1,4 +1,3 @@
-from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, UploadFile
@@ -8,18 +7,9 @@ from ppe_detection.infrastructure.adapters.inbound.api.schemas.detection_schema 
     DetectionResponse,
     DetectionSchema,
 )
-from ppe_detection.infrastructure.adapters.outbound.model.huggingface_model_provider import (
-    HuggingFaceModelProvider,
-)
-from ppe_detection.infrastructure.adapters.outbound.model.yolo_detector import YoloDetector
+from ppe_detection.infrastructure.config.dependencies import get_detect_ppe_use_case
 
 router = APIRouter(tags=["detection"])
-
-
-@lru_cache(maxsize=1)
-def get_detect_ppe_use_case() -> DetectPPEUseCase:
-    return DetectPPEUseCase(YoloDetector(HuggingFaceModelProvider()))
-
 
 DetectPPEUseCaseDep = Annotated[DetectPPEUseCase, Depends(get_detect_ppe_use_case)]
 
