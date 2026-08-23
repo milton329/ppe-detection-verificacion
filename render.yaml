@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ppe-detection-verificacion
+    runtime: docker
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
