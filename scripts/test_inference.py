@@ -5,7 +5,8 @@ de confianza y elegir uno adecuado para casco y chaleco."""
 from pathlib import Path
 
 from huggingface_hub import hf_hub_download
-from ultralytics import YOLO
+from ultralytics.engine.results import Results
+from ultralytics.models.yolo.model import YOLO
 
 from ppe_detection.infrastructure.adapters.outbound.model.huggingface_model_provider import (
     HuggingFaceModelProvider,
@@ -24,22 +25,26 @@ def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     for conf in THRESHOLDS:
-        results = model.predict(
-            source=image_path,
-            conf=conf,
-            save=True,
-            project=str(OUTPUT_DIR),
-            name=f"conf_{conf}",
-            exist_ok=True,
+        results = list(
+            model.predict(
+                source=image_path,
+                conf=conf,
+                save=True,
+                project=str(OUTPUT_DIR),
+                name=f"conf_{conf}",
+                exist_ok=True,
+            )
         )
         result = results[0]
+        assert isinstance(result, Results), "predict sobre una imagen devuelve un Results"
         print(f"\n--- Umbral de confianza: {conf} ---")
-        if result.boxes is None or len(result.boxes) == 0:
+        boxes = result.boxes
+        if boxes is None or len(boxes) == 0:
             print("Sin detecciones")
             continue
-        for box in result.boxes:
-            cls_name = model.names[int(box.cls[0])]
-            confidence = float(box.conf[0])
+        for i in range(len(boxes)):
+            cls_name = model.names[int(boxes.cls[i])]
+            confidence = float(boxes.conf[i])
             print(f"{cls_name}: {confidence:.2f}")
 
 

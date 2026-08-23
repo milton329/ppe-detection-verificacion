@@ -1,7 +1,8 @@
 import io
 
 from PIL import Image
-from ultralytics import YOLO
+from ultralytics.engine.results import Results
+from ultralytics.models.yolo.model import YOLO
 
 from ppe_detection.application.ports.outbound.model_provider import ModelProviderPort
 from ppe_detection.domain.entities.detection import Detection
@@ -26,17 +27,19 @@ class YoloDetector:
     def detect(self, image_bytes: bytes, confidence: float = 0.25) -> list[Detection]:
         model = self._get_model()
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        results = model.predict(source=image, conf=confidence, save=False, verbose=False)
+        results = list(model.predict(source=image, conf=confidence, save=False, verbose=False))
         result = results[0]
+        assert isinstance(result, Results), "predict sobre una imagen devuelve un Results"
 
         detections: list[Detection] = []
-        if result.boxes is None:
+        boxes = result.boxes
+        if boxes is None:
             return detections
 
-        for box in result.boxes:
-            class_name = model.names[int(box.cls[0])]
-            box_confidence = float(box.conf[0])
-            x1, y1, x2, y2 = (float(v) for v in box.xyxy[0])
+        for i in range(len(boxes)):
+            class_name = model.names[int(boxes.cls[i])]
+            box_confidence = float(boxes.conf[i])
+            x1, y1, x2, y2 = (float(v) for v in boxes.xyxy[i])
             detections.append(Detection(class_name, box_confidence, (x1, y1, x2, y2)))
 
         return detections
