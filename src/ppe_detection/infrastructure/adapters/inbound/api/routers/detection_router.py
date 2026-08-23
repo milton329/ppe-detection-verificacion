@@ -25,9 +25,9 @@ DetectPPEUseCaseDep = Annotated[DetectPPEUseCase, Depends(get_detect_ppe_use_cas
 
 
 @router.post("/detect", response_model=DetectionResponse)
-async def detect(
+def detect(
     use_case: DetectPPEUseCaseDep, file: UploadFile, confidence: float = 0.25
 ) -> DetectionResponse:
-    image_bytes = await file.read()
+    image_bytes = file.file.read()
     detections = use_case.execute(image_bytes, confidence)
     return DetectionResponse(detections=[DetectionSchema.from_entity(d) for d in detections])
