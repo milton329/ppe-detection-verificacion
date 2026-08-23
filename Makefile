@@ -1,4 +1,4 @@
-.PHONY: r run download-model lint typecheck check format docker-build
+.PHONY: r run download-model lint typecheck check format test docker-build
 
 r: run
 
@@ -18,6 +18,9 @@ typecheck:
 	uv run mypy .
 
 check: lint typecheck
+
+test:
+	uv run pytest
 
 docker-build:
 	docker build -t ppe-detection-verificacion .
