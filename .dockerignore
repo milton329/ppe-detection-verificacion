@@ -1,0 +1,17 @@
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.git
+.github
+.opencode
+.agents
+.specify
+docs
+tests
+specs
+scripts
+*.md
+.env
+uv.lock
