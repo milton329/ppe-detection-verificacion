@@ -9,3 +9,4 @@ iniciar_app.cmd
 tests/fixtures/inference_output/
 # .agents/
 # skills-lock.json
+.specify/
