@@ -30,6 +30,4 @@ async def detect(
 ) -> DetectionResponse:
     image_bytes = await file.read()
     detections = use_case.execute(image_bytes, confidence)
-    return DetectionResponse(
-        detections=[DetectionSchema.from_entity(d) for d in detections]
-    )
+    return DetectionResponse(detections=[DetectionSchema.from_entity(d) for d in detections])
