@@ -145,8 +145,53 @@ Para actualizarlos a su última versión:
 npx skills update
 ```
 
+##  Pruebas Unitarias
+
+El proyecto cuenta con 49 pruebas unitarias, con 100% de cobertura de línea
+sobre `src/ppe_detection`.
+
+### Cómo ejecutarlas
+
+```bash
+uv sync
+uv run pytest tests/unit -v
+```
+
+Con reporte de cobertura:
+```bash
+uv run pytest tests/unit --cov=src/ppe_detection --cov-report=term-missing
+```
+
+### Qué se prueba
+
+| Módulo | Descripción |
+|---|---|
+| `domain/entities/compliance.py` | Propiedades `is_compliant` / `all_compliant` de las entidades de cumplimiento |
+| `domain/services/compliance_service.py` | Regla de negocio: cruce de personas con casco/chaleco, incluyendo casos de una y de varias personas en la misma imagen con estados mixtos |
+| `application/use_cases/detect_ppe.py` | Caso de uso `DetectPPEUseCase`, aislado de HTTP y del modelo real |
+| `infrastructure/adapters/outbound/model/yolo_detector.py` | Adaptador YOLO: mapeo de resultados del modelo a entidades `Detection`, carga perezosa del modelo (una sola vez), umbral de confianza |
+| `infrastructure/adapters/outbound/model/huggingface_model_provider.py` | Descarga de pesos desde Hugging Face Hub (mockeada, sin red real) |
+| `infrastructure/config/dependencies.py` | Composition root: verifica el wiring correcto de adaptadores y el cacheo como singleton |
+| `infrastructure/adapters/inbound/api/routers/detection_router.py` | Endpoint `POST /detect`: contrato de respuesta, umbral de confianza, ejecución no bloqueante |
+| `infrastructure/adapters/inbound/api/routers/health_router.py` | Endpoint `GET /health` |
+| `infrastructure/adapters/inbound/web/web_router.py` | Rutas de la interfaz web (`/`, `/app`, `/help`): redirecciones y respuestas HTML |
+| `infrastructure/adapters/inbound/api/schemas/detection_schema.py` | Conversión de entidad de dominio a schema Pydantic |
+
+### Enfoque
+
+Las pruebas de infraestructura (YOLO, Hugging Face, endpoints) usan
+`unittest.mock` para aislar por completo el modelo real y la red — ninguna
+prueba descarga pesos ni ejecuta inferencia real, por lo que el suite
+completo corre en menos de 2 segundos.
+
+
+
+
+
 ## Documentación adicional
 
 - [`docs/pruebas_inferencia_umbrales.md`](docs/pruebas_inferencia_umbrales.md) —
   pruebas iniciales de inferencia, ajuste de umbral de confianza, y hallazgo
   sobre las limitaciones del modelo con fotos de estudio/banco de imágenes.
+
+
