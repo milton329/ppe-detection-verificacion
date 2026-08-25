@@ -20,6 +20,13 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+ppe_detection = [
+    "infrastructure/adapters/inbound/web/static/css/*.css",
+    "infrastructure/adapters/inbound/web/static/js/*.js",
+    "infrastructure/adapters/inbound/web/templates/*.html",
+]
+
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
