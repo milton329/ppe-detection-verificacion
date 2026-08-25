@@ -49,5 +49,9 @@ python_version = "3.11"
 mypy_path = "src"
 strict = true
 
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "integration: pruebas que usan el modelo real y requieren red la primera vez (excluidas del suite rápido)",
+]
