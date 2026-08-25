@@ -1,8 +1,15 @@
 """Entidades de dominio para el reporte de cumplimiento de EPP."""
 
 from dataclasses import dataclass
+from enum import StrEnum
 
 from ppe_detection.domain.entities.detection import Detection
+
+
+class ComplianceStatus(StrEnum):
+    COMPLIANT = "COMPLIANT"
+    NON_COMPLIANT = "NON_COMPLIANT"
+    NO_PERSONS = "NO_PERSONS"
 
 
 @dataclass(frozen=True)
@@ -16,6 +23,12 @@ class PersonCompliance:
     @property
     def is_compliant(self) -> bool:
         return self.has_helmet and self.has_vest
+
+    @property
+    def status(self) -> ComplianceStatus:
+        if self.is_compliant:
+            return ComplianceStatus.COMPLIANT
+        return ComplianceStatus.NON_COMPLIANT
 
 
 @dataclass(frozen=True)
@@ -31,4 +44,20 @@ class ComplianceReport:
 
     @property
     def all_compliant(self) -> bool:
-        return all(p.is_compliant for p in self.people)
+        return bool(self.people) and all(p.is_compliant for p in self.people)
+
+    @property
+    def status(self) -> ComplianceStatus:
+        if not self.people:
+            return ComplianceStatus.NO_PERSONS
+        if self.all_compliant:
+            return ComplianceStatus.COMPLIANT
+        return ComplianceStatus.NON_COMPLIANT
+
+    @property
+    def compliant_count(self) -> int:
+        return sum(person.is_compliant for person in self.people)
+
+    @property
+    def non_compliant_count(self) -> int:
+        return len(self.people) - self.compliant_count
