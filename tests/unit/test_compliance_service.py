@@ -72,8 +72,9 @@ def test_epp_fuera_de_la_bbox_de_la_persona_no_cuenta() -> None:
     assert report.people[0].has_helmet is False
 
 
-def test_reporte_vacio_sin_personas_es_conforme() -> None:
+def test_reporte_vacio_sin_personas_no_es_conforme_y_tiene_estado_no_persons() -> None:
     report = evaluate_compliance([])
 
     assert report.people == ()
-    assert report.all_compliant is True
+    assert report.all_compliant is False
+    assert report.status.value == "NO_PERSONS"

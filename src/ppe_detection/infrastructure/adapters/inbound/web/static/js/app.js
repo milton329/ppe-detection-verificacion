@@ -31,7 +31,9 @@ const errorMessage = document.getElementById("error-message");
 const resultsEmpty = document.getElementById("results-empty");
 const resultsLoading = document.getElementById("results-loading");
 const resultsContent = document.getElementById("results-content");
-const summaryEl = document.getElementById("summary");
+const detectionSummaryEl = document.getElementById("detection-summary");
+const complianceSummaryEl = document.getElementById("compliance-summary");
+const personListEl = document.getElementById("person-list");
 const detectionListEl = document.getElementById("detection-list");
 
 const cameraToggleBtn = document.getElementById("camera-toggle-btn");
@@ -191,7 +193,7 @@ detectButton.addEventListener("click", async () => {
 
     const data = await response.json();
     drawDetections(data.detections);
-    showResults(data.detections);
+    showResults(data);
   } catch (err) {
     showError(err.message || "No se pudo completar el análisis.");
     resultsEmpty.hidden = false;
@@ -205,24 +207,77 @@ function showLoading() {
   resultsLoading.hidden = false;
 }
 
-function showResults(detections) {
+function statusLabel(status) {
+  return {
+    COMPLIANT: "Cumple",
+    NON_COMPLIANT: "No cumple",
+    NO_PERSONS: "Sin personas detectadas",
+  }[status] || status;
+}
+
+function renderCompliance(persons, summary) {
+  complianceSummaryEl.innerHTML = "";
+  const status = document.createElement("div");
+  status.className = `compliance-status compliance-status--${summary.status.toLowerCase()}`;
+  status.textContent = `Estado general: ${statusLabel(summary.status)}`;
+  complianceSummaryEl.appendChild(status);
+
+  const summaryDetails = document.createElement("div");
+  summaryDetails.className = "compliance-summary__details";
+  [
+    `Total de personas: ${summary.total_persons}`,
+    `Conformes: ${summary.compliant}`,
+    `No conformes: ${summary.non_compliant}`,
+  ].forEach((text) => {
+    const chip = document.createElement("span");
+    chip.className = "summary__chip";
+    chip.textContent = text;
+    summaryDetails.appendChild(chip);
+  });
+  complianceSummaryEl.appendChild(summaryDetails);
+
+  personListEl.innerHTML = "";
+  if (summary.status === "NO_PERSONS") return;
+
+  persons.forEach((person) => {
+    const item = document.createElement("li");
+    item.className = `person-item person-item--${person.status.toLowerCase()}`;
+
+    const title = document.createElement("h3");
+    title.textContent = `Persona ${person.id}`;
+
+    const equipment = document.createElement("p");
+    equipment.textContent = `Casco: ${person.helmet ? "Sí" : "No"} · Chaleco: ${person.vest ? "Sí" : "No"}`;
+
+    const personStatus = document.createElement("p");
+    personStatus.textContent = `Estado: ${statusLabel(person.status)}`;
+
+    item.append(title, equipment, personStatus);
+    personListEl.appendChild(item);
+  });
+}
+
+function showResults(data) {
+  const { detections, persons, summary } = data;
   resultsLoading.hidden = true;
   resultsContent.hidden = false;
+
+  renderCompliance(persons, summary);
 
   const counts = {};
   detections.forEach((d) => {
     counts[d.class_name] = (counts[d.class_name] || 0) + 1;
   });
 
-  summaryEl.innerHTML = "";
+  detectionSummaryEl.innerHTML = "";
   if (Object.keys(counts).length === 0) {
-    summaryEl.innerHTML = `<span class="summary__chip">Sin detecciones a este umbral</span>`;
+    detectionSummaryEl.innerHTML = `<span class="summary__chip">Sin detecciones a este umbral</span>`;
   } else {
     Object.entries(counts).forEach(([className, count]) => {
       const chip = document.createElement("span");
       chip.className = "summary__chip";
       chip.textContent = `${classLabel(className)}: ${count}`;
-      summaryEl.appendChild(chip);
+      detectionSummaryEl.appendChild(chip);
     });
   }
 
