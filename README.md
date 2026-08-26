@@ -266,10 +266,6 @@ instalación y uso.
 - [`docs/pruebas_inferencia_umbrales.md`](docs/pruebas_inferencia_umbrales.md) —
   pruebas iniciales de inferencia, ajuste de umbral de confianza, y hallazgo
   sobre las limitaciones del modelo con fotos de estudio/banco de imágenes.
-<<<<<<< HEAD
-
 ## Licencia
 
 Este proyecto se distribuye bajo la licencia [MIT](LICENSE).
-=======
->>>>>>> main
