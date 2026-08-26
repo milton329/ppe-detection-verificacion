@@ -20,7 +20,7 @@ def test_detect_responde_200_con_esquema_del_contrato(
 
     assert response.status_code == 200
     body = response.json()
-    assert set(body.keys()) == {"detections"}
+    assert set(body.keys()) == {"detections", "persons", "summary"}
     assert len(body["detections"]) == 2
 
     primera = body["detections"][0]
@@ -34,6 +34,22 @@ def test_detect_responde_200_con_esquema_del_contrato(
     segunda = body["detections"][1]
     assert segunda["class_name"] == "human"
     assert segunda["bbox"] == [100.0, 20.0, 200.0, 300.0]
+    assert body["persons"] == [
+        {
+            "id": 1,
+            "status": "NON_COMPLIANT",
+            "helmet": True,
+            "vest": False,
+            "confidence": 0.88,
+            "bbox": [100.0, 20.0, 200.0, 300.0],
+        }
+    ]
+    assert body["summary"] == {
+        "total_persons": 1,
+        "compliant": 0,
+        "non_compliant": 1,
+        "status": "NON_COMPLIANT",
+    }
 
 
 def test_detect_pasa_el_umbral_de_confianza_al_detector(

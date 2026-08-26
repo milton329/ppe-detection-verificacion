@@ -2,6 +2,10 @@
 
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)
+![uv](https://img.shields.io/badge/managed%20with-uv-DE5FE9)
+![Ruff](https://img.shields.io/badge/lint-ruff-D7FF64?logo=ruff&logoColor=black)
+![pytest](https://img.shields.io/badge/tests-pytest-0A9EDC?logo=pytest&logoColor=white)
+![Docker](https://img.shields.io/badge/container-docker-2496ED?logo=docker&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 Sistema de verificación automática de EPP (casco y chaleco) en entornos
@@ -47,9 +51,9 @@ YOLOv11 [`melihuzunoglu/ppe-detection`](https://huggingface.co/melihuzunoglu/ppe
 
 Arquitectura hexagonal (puertos y adaptadores):
 
-- `domain/` — entidades y reglas de negocio (sin dependencias externas):
-  la entidad `Detection` y el `ComplianceRuleService`, que determina si una
-  persona cumple con casco/chaleco.
+- `domain/` — entidades y reglas de negocio (sin dependencias externas),
+  incluyendo `Detection`, las entidades de cumplimiento y la evaluación de
+  casco/chaleco por persona.
 - `application/` — casos de uso (`DetectPPEUseCase`) y puertos
   (`inbound`/`outbound`).
 - `infrastructure/adapters/inbound/` — adaptadores de entrada:
@@ -59,6 +63,26 @@ Arquitectura hexagonal (puertos y adaptadores):
 - `infrastructure/adapters/outbound/model/` — adaptadores de salida:
   `HuggingFaceModelProvider` (descarga los pesos) y `YoloDetector` (ejecuta
   la inferencia).
+
+### Flujo de verificación
+
+El flujo actual es:
+
+```text
+imagen → detección YOLO → detecciones → evaluación de cumplimiento → respuesta API → panel
+```
+
+El backend es la única fuente de verdad para el cumplimiento. El panel
+presenta los estados y valores recibidos de la API, sin recalcular las reglas.
+
+El estado global de `summary.status` puede ser:
+
+- `COMPLIANT` — todas las personas detectadas cumplen con casco y chaleco.
+- `NON_COMPLIANT` — al menos una persona detectada no cumple.
+- `NO_PERSONS` — no se detectaron personas.
+
+Cada elemento de `persons` también incluye su estado individual (`COMPLIANT` o
+`NON_COMPLIANT`), además de indicar si tiene casco y chaleco.
 
 ## Cómo levantar el proyecto
 
@@ -106,9 +130,39 @@ uvicorn ppe_detection.main:app --reload --app-dir src
 ## Endpoints REST
 
 - `POST /detect?confidence=0.25` — recibe una imagen (`multipart/form-data`,
-  campo `file`) y devuelve las detecciones crudas del modelo (clase,
-  confianza, caja delimitadora), sin aplicar todavía reglas de cumplimiento.
+  campo `file`) y devuelve las detecciones crudas junto con la evaluación de
+  cumplimiento. La respuesta contiene `detections`, `persons` y `summary`.
 - `GET /health` — healthcheck.
+
+Ejemplo breve de respuesta de `POST /detect`:
+
+```json
+{
+  "detections": [
+    {
+      "class_name": "human",
+      "confidence": 0.88,
+      "bbox": [100.0, 20.0, 200.0, 300.0]
+    }
+  ],
+  "persons": [
+    {
+      "id": 1,
+      "status": "COMPLIANT",
+      "helmet": true,
+      "vest": true,
+      "confidence": 0.88,
+      "bbox": [100.0, 20.0, 200.0, 300.0]
+    }
+  ],
+  "summary": {
+    "total_persons": 1,
+    "compliant": 1,
+    "non_compliant": 0,
+    "status": "COMPLIANT"
+  }
+}
+```
 
 ## Descarga del modelo
 
@@ -136,7 +190,7 @@ remoto) la cámara solo funcionará si el sitio se sirve por HTTPS.**
 
 ## Pruebas unitarias
 
-El proyecto cuenta con 49 pruebas unitarias, con 100% de cobertura de línea
+El proyecto cuenta con 50 pruebas unitarias, con 100% de cobertura de línea
 sobre `src/ppe_detection`.
 
 ### Cómo ejecutarlas
@@ -155,23 +209,25 @@ uv run pytest tests/unit --cov=src/ppe_detection --cov-report=term-missing
 
 | Módulo | Descripción |
 |---|---|
-| `domain/entities/compliance.py` | Propiedades `is_compliant` / `all_compliant` de las entidades de cumplimiento |
+| `domain/entities/compliance.py` | Estados `COMPLIANT`, `NON_COMPLIANT` y `NO_PERSONS`, además de las propiedades de las entidades de cumplimiento |
 | `domain/services/compliance_service.py` | Regla de negocio: cruce de personas con casco/chaleco, incluyendo casos de una y de varias personas en la misma imagen con estados mixtos |
-| `application/use_cases/detect_ppe.py` | Caso de uso `DetectPPEUseCase`, aislado de HTTP y del modelo real |
+| `application/use_cases/detect_ppe.py` | Caso de uso `DetectPPEUseCase`: detección y evaluación de cumplimiento, aislado de HTTP y del modelo real |
+| `application/use_cases/detection_result.py` | Resultado de aplicación que agrupa las detecciones y el reporte de cumplimiento |
 | `infrastructure/adapters/outbound/model/yolo_detector.py` | Adaptador YOLO: mapeo de resultados del modelo a entidades `Detection`, carga perezosa del modelo (una sola vez), umbral de confianza |
 | `infrastructure/adapters/outbound/model/huggingface_model_provider.py` | Descarga de pesos desde Hugging Face Hub (mockeada, sin red real) |
 | `infrastructure/config/dependencies.py` | Composition root: verifica el wiring correcto de adaptadores y el cacheo como singleton |
-| `infrastructure/adapters/inbound/api/routers/detection_router.py` | Endpoint `POST /detect`: contrato de respuesta, umbral de confianza, ejecución no bloqueante |
+| `infrastructure/adapters/inbound/api/routers/detection_router.py` | Endpoint `POST /detect`: detecciones, cumplimiento, contrato de respuesta, umbral de confianza y ejecución no bloqueante |
 | `infrastructure/adapters/inbound/api/routers/health_router.py` | Endpoint `GET /health` |
 | `infrastructure/adapters/inbound/web/web_router.py` | Rutas de la interfaz web (`/`, `/app`, `/help`): redirecciones y respuestas HTML |
-| `infrastructure/adapters/inbound/api/schemas/detection_schema.py` | Conversión de entidad de dominio a schema Pydantic |
+| `infrastructure/adapters/inbound/api/schemas/detection_schema.py` | Schemas Pydantic para detecciones, personas evaluadas y resumen de cumplimiento |
 
 ### Enfoque
 
-Las pruebas de infraestructura (YOLO, Hugging Face, endpoints) usan
+Las pruebas unitarias de infraestructura (YOLO, Hugging Face y endpoints) usan
 `unittest.mock` para aislar por completo el modelo real y la red — ninguna
-prueba descarga pesos ni ejecuta inferencia real, por lo que el suite
-completo corre en menos de 2 segundos.
+prueba unitaria descarga pesos ni ejecuta inferencia real. Las pruebas de
+integración del modelo real se ejecutan por separado y requieren los pesos y
+la red.
 
 ## Deploy
 
@@ -210,7 +266,6 @@ instalación y uso.
 - [`docs/pruebas_inferencia_umbrales.md`](docs/pruebas_inferencia_umbrales.md) —
   pruebas iniciales de inferencia, ajuste de umbral de confianza, y hallazgo
   sobre las limitaciones del modelo con fotos de estudio/banco de imágenes.
-
 ## Licencia
 
 Este proyecto se distribuye bajo la licencia [MIT](LICENSE).

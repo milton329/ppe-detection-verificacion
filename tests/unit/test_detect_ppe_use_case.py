@@ -19,14 +19,15 @@ class FakeDetector:
         return self._detections
 
 
-def test_execute_delega_en_el_detector_y_devuelve_su_resultado():
+def test_execute_devuelve_detecciones_y_evaluacion_de_cumplimiento():
     esperado = [Detection(class_name="human", confidence=0.9, bbox=(0.0, 0.0, 1.0, 1.0))]
     detector = FakeDetector(detections=esperado)
     caso_de_uso = DetectPPEUseCase(detector)
 
     resultado = caso_de_uso.execute(b"imagen-de-prueba", confidence=0.5)
 
-    assert resultado == esperado
+    assert resultado.detections == esperado
+    assert resultado.compliance.status.value == "NON_COMPLIANT"
 
 
 def test_execute_pasa_los_bytes_de_la_imagen_al_detector():
@@ -62,4 +63,5 @@ def test_execute_con_detector_que_no_encuentra_nada():
 
     resultado = caso_de_uso.execute(b"imagen-sin-personas")
 
-    assert resultado == []
+    assert resultado.detections == []
+    assert resultado.compliance.status.value == "NO_PERSONS"
