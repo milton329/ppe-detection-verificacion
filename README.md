@@ -188,12 +188,11 @@ mientras se accede por `localhost`/`127.0.0.1`, porque los navegadores tratan
 esas direcciones como contexto seguro. **En producción (Docker, servidor
 remoto) la cámara solo funcionará si el sitio se sirve por HTTPS.**
 
-## Pruebas unitarias
+### Pruebas unitarias
 
-El proyecto cuenta con 50 pruebas unitarias, con 100% de cobertura de línea
-sobre `src/ppe_detection`.
-
-### Cómo ejecutarlas
+56 pruebas, con 100% de cobertura de línea sobre `src/ppe_detection`. Todas
+mockean el modelo y cualquier dependencia externa (Hugging Face, red), por
+lo que corren en segundos y no requieren internet.
 
 ```bash
 uv sync
@@ -205,29 +204,49 @@ Con reporte de cobertura:
 uv run pytest tests/unit --cov=src/ppe_detection --cov-report=term-missing
 ```
 
-### Qué se prueba
+**Qué cubren:**
 
-| Módulo | Descripción |
+| Módulo | Qué se prueba |
 |---|---|
-| `domain/entities/compliance.py` | Estados `COMPLIANT`, `NON_COMPLIANT` y `NO_PERSONS`, además de las propiedades de las entidades de cumplimiento |
-| `domain/services/compliance_service.py` | Regla de negocio: cruce de personas con casco/chaleco, incluyendo casos de una y de varias personas en la misma imagen con estados mixtos |
-| `application/use_cases/detect_ppe.py` | Caso de uso `DetectPPEUseCase`: detección y evaluación de cumplimiento, aislado de HTTP y del modelo real |
-| `application/use_cases/detection_result.py` | Resultado de aplicación que agrupa las detecciones y el reporte de cumplimiento |
-| `infrastructure/adapters/outbound/model/yolo_detector.py` | Adaptador YOLO: mapeo de resultados del modelo a entidades `Detection`, carga perezosa del modelo (una sola vez), umbral de confianza |
-| `infrastructure/adapters/outbound/model/huggingface_model_provider.py` | Descarga de pesos desde Hugging Face Hub (mockeada, sin red real) |
-| `infrastructure/config/dependencies.py` | Composition root: verifica el wiring correcto de adaptadores y el cacheo como singleton |
-| `infrastructure/adapters/inbound/api/routers/detection_router.py` | Endpoint `POST /detect`: detecciones, cumplimiento, contrato de respuesta, umbral de confianza y ejecución no bloqueante |
+| `domain/entities/compliance.py` | Propiedades de cumplimiento (`is_compliant`, estado global) |
+| `domain/services/compliance_service.py` | Regla de negocio: cruce de personas con casco/chaleco, incluyendo casos de una y de varias personas con estados mixtos en la misma imagen |
+| `application/use_cases/detect_ppe.py` | Caso de uso, aislado de HTTP y del modelo real |
+| `infrastructure/adapters/outbound/model/yolo_detector.py` | Adaptador YOLO: mapeo de resultados a entidades, carga perezosa del modelo, umbral de confianza |
+| `infrastructure/adapters/outbound/model/huggingface_model_provider.py` | Descarga de pesos desde Hugging Face Hub (mockeada) |
+| `infrastructure/config/dependencies.py` | Composition root: wiring correcto de adaptadores y cacheo como singleton |
+| `infrastructure/adapters/inbound/api/routers/detection_router.py` | Endpoint `POST /detect`: contrato de respuesta, umbral de confianza, ejecución no bloqueante |
 | `infrastructure/adapters/inbound/api/routers/health_router.py` | Endpoint `GET /health` |
-| `infrastructure/adapters/inbound/web/web_router.py` | Rutas de la interfaz web (`/`, `/app`, `/help`): redirecciones y respuestas HTML |
-| `infrastructure/adapters/inbound/api/schemas/detection_schema.py` | Schemas Pydantic para detecciones, personas evaluadas y resumen de cumplimiento |
+| `infrastructure/adapters/inbound/web/web_router.py` | Rutas de la interfaz web (`/`, `/app`, `/help`) |
+| `infrastructure/adapters/inbound/api/schemas/detection_schema.py` | Conversión de entidades de dominio a schemas Pydantic |
+| `main.py` | Ensamblaje completo de la app: que todos los routers queden registrados y respondan juntos (verificado vía `/openapi.json`, no inspeccionando `app.routes` directamente, para no depender de detalles internos que cambian entre versiones de FastAPI) |
 
-### Enfoque
+### Pruebas de integración (modelo real)
 
-Las pruebas unitarias de infraestructura (YOLO, Hugging Face y endpoints) usan
-`unittest.mock` para aislar por completo el modelo real y la red — ninguna
-prueba unitaria descarga pesos ni ejecuta inferencia real. Las pruebas de
-integración del modelo real se ejecutan por separado y requieren los pesos y
-la red.
+5 pruebas que usan el modelo YOLOv11 real (descargado de Hugging Face) contra
+imágenes reales de `docs/evidencia/`. No mockean nada — por eso están
+separadas del suite normal: requieren red la primera vez y tardan más.
+
+```bash
+uv run pytest tests/integration -v
+```
+
+**Resultado esperado:** `4 passed, 1 xfailed`. El `xfail` es intencional y
+está documentado — ver más abajo.
+
+###  Limitación conocida: fotografía de estudio
+
+El modelo detecta con buena confianza personas (`human`) y, en general,
+cascos (`helmet`), pero **puede no detectar el chaleco (`vest`) en
+fotografías de estudio** (fondo de color sólido, pose posada, iluminación
+artificial) — incluso cuando el chaleco es perfectamente visible para un
+observador humano. En pruebas de integración, esto ocurrió incluso bajando
+el umbral de confianza a 0.01.
+
+La causa probable es que el modelo fue entrenado con fotos reales de obra
+(fondos de construcción, iluminación natural), un contexto visual distinto
+al de la fotografía de banco de imágenes/estudio. Esta limitación está
+cubierta por una prueba marcada como `xfail` (fallo esperado y
+documentado) en `tests/integration/test_real_model_detection.py.
 
 ## Deploy
 
