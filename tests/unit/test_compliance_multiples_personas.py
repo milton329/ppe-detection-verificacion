@@ -45,8 +45,16 @@ def test_tres_personas_todas_cumplen():
     epp = []
     for persona in personas:
         x1, y1, _, _ = persona.bbox
-        epp.append(Detection(class_name="helmet", confidence=0.9, bbox=(x1 + 10, y1 + 10, x1 + 40, y1 + 40)))
-        epp.append(Detection(class_name="vest", confidence=0.9, bbox=(x1 + 10, y1 + 60, x1 + 60, y1 + 140)))
+        epp.append(
+            Detection(
+                class_name="helmet", confidence=0.9, bbox=(x1 + 10, y1 + 10, x1 + 40, y1 + 40)
+            )
+        )
+        epp.append(
+            Detection(
+                class_name="vest", confidence=0.9, bbox=(x1 + 10, y1 + 60, x1 + 60, y1 + 140)
+            )
+        )
 
     report = evaluate_compliance(personas + epp)
 

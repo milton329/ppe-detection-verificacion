@@ -52,10 +52,11 @@ class FakeResult:
 def patched_yolo():
     """Reemplaza YOLO y Results dentro del módulo bajo prueba, para que
     YoloDetector nunca toque el modelo real ni descargue nada."""
+    target = "ppe_detection.infrastructure.adapters.outbound.model.yolo_detector"
     with (
-        patch("ppe_detection.infrastructure.adapters.outbound.model.yolo_detector.YOLO") as mock_yolo_cls,
-        patch("ppe_detection.infrastructure.adapters.outbound.model.yolo_detector.Results", FakeResult),
-        patch("ppe_detection.infrastructure.adapters.outbound.model.yolo_detector.Image") as mock_image,
+        patch(f"{target}.YOLO") as mock_yolo_cls,
+        patch(f"{target}.Results", FakeResult),
+        patch(f"{target}.Image") as mock_image,
     ):
         mock_image.open.return_value.convert.return_value = "imagen-convertida"
         yield mock_yolo_cls
