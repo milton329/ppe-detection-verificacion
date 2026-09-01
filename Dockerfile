@@ -16,7 +16,7 @@ COPY pyproject.toml ./
 COPY src ./src
 
 # Instala torch/torchvision CPU-only primero (el índice por defecto de PyPI
-# trae build con CUDA, mucho más pesado e innecesario en Render).
+# trae build con CUDA, mucho más pesado e innecesario en el droplet).
 RUN pip install --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision \
     && pip install .
 

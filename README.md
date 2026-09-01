@@ -43,7 +43,7 @@ YOLOv11 [`melihuzunoglu/ppe-detection`](https://huggingface.co/melihuzunoglu/ppe
 | Interfaz web | Jinja2 + CSS/JS propios (sin Gradio/Streamlit) |
 | Imágenes | Pillow |
 | Gestión de dependencias | [uv](https://docs.astral.sh/uv/) |
-| Contenedor / deploy | Docker + Render |
+| Contenedor / deploy | Docker + DigitalOcean (vía GitLab CI/CD) |
 | Pruebas | pytest + pytest-cov |
 | Lint / tipos | ruff + mypy |
 
@@ -262,16 +262,21 @@ docker run -p 8000:8000 ppe-detection-verificacion
 El `Dockerfile` construye la imagen e instala dependencias con `uv`; `.dockerignore`
 excluye archivos de desarrollo local (entorno virtual, caché, specs, etc.).
 
-### Render
+### CI/CD y despliegue
 
-`render.yaml` define un servicio web basado en el mismo `Dockerfile`
-(`runtime: docker`), con healthcheck en `/health`. Al conectar el repositorio
-en [Render](https://render.com/), el servicio se configura automáticamente a
-partir de ese archivo.
+El repositorio se espeja automáticamente a GitLab
+(`.github/workflows/mirror-gitlab.yml`, push mirror en cada commit a `main`,
+ya que el pull mirroring de GitLab.com requiere plan Premium). El pipeline
+`.gitlab-ci.yml` corre en ese espejo con tres etapas:
+
+1. **test** — `pytest` + `ruff` + `mypy`.
+2. **build** — construye la imagen Docker y la sube al Container Registry
+   de GitLab.
+3. **deploy** — se conecta por SSH a un droplet de DigitalOcean, hace pull
+   de la imagen y reinicia el contenedor.
 
 > **Nota:** la captura por cámara (ver [sección anterior](#captura-por-cámara))
-> solo funciona en producción si el sitio se sirve por HTTPS — Render lo
-> provee por defecto en sus dominios `.onrender.com`.
+> solo funciona en producción si el sitio se sirve por HTTPS.
 
 ## Herramientas de desarrollo con IA
 

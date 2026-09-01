@@ -1,0 +1,52 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  IMAGE_SHA: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  IMAGE_LATEST: $CI_REGISTRY_IMAGE:latest
+  CONTAINER_NAME: ppe-detection
+
+test:
+  stage: test
+  image: python:3.11-slim
+  before_script:
+    - pip install uv
+  script:
+    - uv sync
+    - uv run pytest tests/unit --cov=src/ppe_detection
+    - uv run ruff check .
+    - uv run mypy src
+
+build:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build -t "$IMAGE_SHA" -t "$IMAGE_LATEST" .
+    - docker push "$IMAGE_SHA"
+    - docker push "$IMAGE_LATEST"
+
+deploy:
+  stage: deploy
+  image: alpine:3.20
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  before_script:
+    - apk add --no-cache openssh-client
+    - chmod 600 "$DO_SSH_KEY"
+    - mkdir -p ~/.ssh
+    - ssh-keyscan -H "$DO_HOST" >> ~/.ssh/known_hosts
+  script:
+    - >
+      ssh -i "$DO_SSH_KEY" "$DO_USER@$DO_HOST"
+      "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+      docker pull $IMAGE_LATEST &&
+      docker stop $CONTAINER_NAME || true &&
+      docker rm $CONTAINER_NAME || true &&
+      docker run -d --name $CONTAINER_NAME -p 8000:8000 --restart unless-stopped $IMAGE_LATEST"
