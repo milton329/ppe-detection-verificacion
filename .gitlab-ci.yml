@@ -1,17 +1,35 @@
+# Pipeline de CI/CD de ppe-detection-verificacion.
+#
+# Corre en el mirror de GitLab (el código fuente vive en GitHub; un GitHub
+# Action lo empuja aquí en cada push a main, ya que el pull mirroring
+# nativo de GitLab.com es de pago). Explicación línea por línea, con los
+# errores reales que se resolvieron al armarlo, en:
+# docs/gitlab-ci-explicado.md
+
+# 3 etapas secuenciales: si una falla, las siguientes no corren.
 stages:
   - test
   - build
   - deploy
 
+# Variables compartidas por los 3 jobs. $CI_REGISTRY_IMAGE y
+# $CI_COMMIT_SHORT_SHA son predefinidas por GitLab (no se configuran).
 variables:
-  IMAGE_SHA: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-  IMAGE_LATEST: $CI_REGISTRY_IMAGE:latest
+  IMAGE_SHA: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA # tag inmutable por commit (trazabilidad/rollback)
+  IMAGE_LATEST: $CI_REGISTRY_IMAGE:latest             # tag móvil que usa el job de deploy
   CONTAINER_NAME: ppe-detection
 
+# ---------------------------------------------------------------------------
+# TEST — corre siempre, en cualquier rama. Validación mínima de calidad.
+# ---------------------------------------------------------------------------
 test:
   stage: test
   image: python:3.11-slim
   before_script:
+    # python:3.11-slim no trae las librerías de sistema (no de Python) que
+    # necesita opencv-python (dependencia de ultralytics/YOLO). Sin esto,
+    # "import cv2" falla con ImportError: libxcb.so.1 not found — mismo
+    # motivo por el que el Dockerfile instala libgl1/libglib2.0-0.
     - apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 libxcb1 libxext6 libsm6 libxrender1
     - pip install uv
   script:
@@ -20,32 +38,65 @@ test:
     - uv run ruff check .
     - uv run mypy src
 
+# ---------------------------------------------------------------------------
+# BUILD — solo en main. Construye la imagen Docker y la sube al Container
+# Registry de GitLab (incluido gratis en cada proyecto).
+# ---------------------------------------------------------------------------
 build:
   stage: build
   image: docker:27
+  # dind = Docker-in-Docker: levanta un daemon Docker real en un contenedor
+  # aparte; el cliente `docker` de este job se conecta a él. Patrón estándar
+  # de GitLab CI para cualquier job que necesite correr `docker build`.
   services:
     - docker:27-dind
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
+    # $CI_REGISTRY_USER / $CI_REGISTRY_PASSWORD / $CI_REGISTRY son
+    # credenciales automáticas de GitLab para el registry de este proyecto.
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker build -t "$IMAGE_SHA" -t "$IMAGE_LATEST" .
+    - docker build -t "$IMAGE_SHA" -t "$IMAGE_LATEST" . # una sola build, dos tags
     - docker push "$IMAGE_SHA"
     - docker push "$IMAGE_LATEST"
 
+# ---------------------------------------------------------------------------
+# DEPLOY — solo en main. Se conecta por SSH al droplet de DigitalOcean y
+# reemplaza el contenedor en producción por la imagen recién publicada.
+# ---------------------------------------------------------------------------
 deploy:
   stage: deploy
-  image: alpine:3.20
+  image: alpine:3.20 # imagen mínima; este job solo necesita un cliente SSH
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   before_script:
     - apk add --no-cache openssh-client
+    # DO_SSH_KEY es una CI/CD Variable tipo "File": GitLab la escribe a un
+    # archivo temporal y esta variable apunta a esa ruta.
+    #
+    # Estas dos líneas normalizan ese archivo porque, al pegar la llave
+    # desde el navegador, quedó (1) con saltos de línea estilo Windows
+    # (\r\n) y (2) sin el salto de línea final tras
+    # "-----END OPENSSH PRIVATE KEY-----". Ambos rompen el formato PEM y
+    # producían "error in libcrypto" / "Permission denied (publickey)"
+    # aunque la llave en sí era válida (diagnosticado con `wc -l` y
+    # `ssh-keygen -y`, ver docs/gitlab-ci-explicado.md).
     - sed -i 's/\r$//' "$DO_SSH_KEY"
     - printf '\n' >> "$DO_SSH_KEY"
-    - chmod 600 "$DO_SSH_KEY"
+    - chmod 600 "$DO_SSH_KEY" # SSH exige permisos estrictos en la llave privada
     - mkdir -p ~/.ssh
+    # Registra la huella del servidor de antemano para que el `ssh` de abajo
+    # no se quede esperando una confirmación interactiva imposible en CI.
     - ssh-keyscan -H "$DO_HOST" >> ~/.ssh/known_hosts
   script:
+    # Un solo `ssh` que ejecuta una cadena de comandos remotos en el
+    # droplet (no son pasos del pipeline, es un string que corre allá):
+    #   1. login al registry (el droplet también necesita autenticarse)
+    #   2. pull de la imagen recién publicada
+    #   3-4. detiene/borra el contenedor anterior (|| true: no falla si es
+    #        el primer deploy y todavía no existe ningún contenedor)
+    #   5. levanta el contenedor nuevo, expuesto en :8000, con reinicio
+    #      automático si el droplet se reinicia
     - >
       ssh -i "$DO_SSH_KEY" "$DO_USER@$DO_HOST"
       "docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
