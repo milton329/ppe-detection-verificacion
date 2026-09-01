@@ -44,6 +44,8 @@ deploy:
     - chmod 600 "$DO_SSH_KEY"
     - mkdir -p ~/.ssh
     - ssh-keyscan -H "$DO_HOST" >> ~/.ssh/known_hosts
+    - wc -l "$DO_SSH_KEY"
+    - ssh-keygen -y -f "$DO_SSH_KEY" || echo "LLAVE INVALIDA: revisar cómo quedó guardada en el secret DO_SSH_KEY"
   script:
     - >
       ssh -i "$DO_SSH_KEY" "$DO_USER@$DO_HOST"
