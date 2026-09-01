@@ -41,11 +41,10 @@ deploy:
   before_script:
     - apk add --no-cache openssh-client
     - sed -i 's/\r$//' "$DO_SSH_KEY"
+    - printf '\n' >> "$DO_SSH_KEY"
     - chmod 600 "$DO_SSH_KEY"
     - mkdir -p ~/.ssh
     - ssh-keyscan -H "$DO_HOST" >> ~/.ssh/known_hosts
-    - wc -l "$DO_SSH_KEY"
-    - 'ssh-keygen -y -f "$DO_SSH_KEY" || echo "LLAVE INVALIDA revisar el secret DO_SSH_KEY"'
   script:
     - >
       ssh -i "$DO_SSH_KEY" "$DO_USER@$DO_HOST"
