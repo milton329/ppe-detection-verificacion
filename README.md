@@ -14,6 +14,7 @@ YOLOv11 [`melihuzunoglu/ppe-detection`](https://huggingface.co/melihuzunoglu/ppe
 
 ## Tabla de contenidos
 
+- [Despliegue](#Despliegue)
 - [Vista previa](#vista-previa)
 - [Stack tecnológico](#stack-tecnológico)
 - [Arquitectura](#arquitectura)
@@ -26,6 +27,13 @@ YOLOv11 [`melihuzunoglu/ppe-detection`](https://huggingface.co/melihuzunoglu/ppe
 - [Herramientas de desarrollo con IA](#herramientas-de-desarrollo-con-ia)
 - [Documentación adicional](#documentación-adicional)
 - [Licencia](#licencia)
+
+##  Despliegue
+
+El proyecto está desplegado en un Droplet de DigitalOcean, corriendo vía Docker para su implementación ingrese a la interfaz mediante los comandos presentados a continuación.
+
+- **Interfaz web:** http://159.223.131.238:8000/app
+- **Healthcheck:** http://159.223.131.238:8000/health
 
 ## Vista previa
 
